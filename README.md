@@ -26,6 +26,32 @@ Uses the **anvi'o metagenomics workflow** in `references_mode`:
 6. Run HMMs for single-copy core gene detection (`anvi-run-hmms`)
 7. Extract coverage and compute plasmid copy number as `coverage_plasmid / median_coverage_chromosome`
 
+### Copy number calculation
+
+For each sample, the copy number of a contig is computed as:
+
+```
+copy_number = coverage(contig) / median_coverage(chromosomal contigs)
+```
+
+**Establishing the chromosomal baseline:**
+
+1. Contigs are classified as chromosomal if they satisfy all three criteria:
+   - Length >= 20 kb (long enough to be reliable)
+   - Assembler-reported depth between 0.8x and 1.3x (consistent with single-copy)
+   - Not marked as circular by the assembler
+2. The **median** coverage across all chromosomal contigs is used as the baseline. Median is preferred over mean because it is robust to outliers from rRNA operons or repeat regions.
+
+**Split-level verification:**
+
+Before trusting a contig's copy number, the coefficient of variation (CV) of coverage across its 20 kb splits is checked. A low CV (< 0.15) confirms that coverage is uniform along the contig — ruling out chimeric assemblies, partial duplications, or localized mapping artifacts that would inflate the mean coverage. All elevated contigs in this dataset passed this check.
+
+**Interpretation:**
+
+- Copy number ~1.0: single-copy, chromosomal
+- Copy number 1.5–2.0: low-copy plasmid or recent duplication
+- Copy number >> 1: multi-copy plasmid (e.g., ~10x = ~10 copies per chromosome)
+
 ### 2. Sequence-based classification (geNomad)
 
 Runs `genomad end-to-end` on profiled contigs (>=1000 bp) to independently classify contigs as plasmid, virus, or chromosome using marker genes and neural networks.
