@@ -191,11 +191,11 @@ for sample in S2052 S2753 S2754; do
     anvi-export-splits-and-coverages \
         -p 05_ANVIO_PROFILE/${sample}/${sample}/PROFILE.db \
         -c 03_CONTIGS/${sample}-contigs.db \
-        --report-contigs -o coverage -O ${sample}_contigs
+        --report-contigs -o 07_COVERAGE -O ${sample}_contigs
     anvi-export-splits-and-coverages \
         -p 05_ANVIO_PROFILE/${sample}/${sample}/PROFILE.db \
         -c 03_CONTIGS/${sample}-contigs.db \
-        --splits-mode -o coverage -O ${sample}_splits
+        --splits-mode -o 07_COVERAGE -O ${sample}_splits
 done
 ```
 
@@ -246,7 +246,7 @@ python3 scripts/03_integrate_genomad.py
 | `04_MAPPING/` | BAM files (sorted, indexed) |
 | `05_ANVIO_PROFILE/` | Per-sample anvi'o profile databases |
 | `06_MERGED/` | README files (single sample per group, no merge needed) |
-| `coverage/` | Exported contig and split coverage files |
+| `07_COVERAGE/` | Exported contig and split coverage files |
 | `genomad_out/` | geNomad output per sample |
 | `results/` | Final tables (see below) |
 
@@ -261,3 +261,40 @@ python3 scripts/03_integrate_genomad.py
 | `results/copy_numbers_with_genomad.tsv` | Integrated copy numbers + geNomad classification |
 | `results/copy_numbers_split_smoothed.tsv` | Split-smoothed copy numbers (3 estimators) + assembler annotations |
 | `results/copy_numbers_split_smoothed_summary.txt` | Human-readable summary of split-smoothed results |
+
+## Roadmap: multi-condition copy number comparison
+
+The current implementation estimates copy numbers from a single read set mapped to a single assembly. For a single isolate with reads, the assembler already provides depth and circularity — CopyCAT adds split-level verification and rRNA filtering, but the core result is the same.
+
+The real power of a coverage-based approach is **comparing copy numbers across conditions**, where assembly alone cannot answer the question. This is the planned next feature.
+
+### Concept
+
+One reference assembly, multiple read sets from different conditions. For each condition, map reads independently and compute per-contig copy numbers. Output a matrix of copy numbers (contigs x conditions) that reveals how plasmid dosage responds to environmental changes.
+
+### Example use cases
+
+- **Antibiotic stress**: Does plasmid copy number increase under sub-MIC antibiotic exposure? AMR gene dosage directly affects resistance level.
+- **Growth phase**: Log vs stationary phase — plasmid replication may decouple from chromosomal replication.
+- **Temperature / salinity shifts**: Relevant for marine Vibrio — environmental conditions may modulate plasmid maintenance.
+- **Serial passaging**: Track plasmid stability over generations — does copy number drift or stay stable?
+
+### Design sketch
+
+The anvi'o workflow already supports this natively. In `samples.txt`, multiple read sets can map to the same group (assembly):
+
+```
+sample          r1              r2              group
+condition_A     reads_A_R1.fq   reads_A_R2.fq   reference
+condition_B     reads_B_R1.fq   reads_B_R2.fq   reference
+condition_C     reads_C_R1.fq   reads_C_R2.fq   reference
+```
+
+With `references_mode: true`, anvi'o maps each sample to the reference, profiles each independently, then **merges** them — producing a single profile DB with per-sample coverage for every split. The merged profile already contains the multi-condition coverage matrix; the analysis script just needs to compute copy numbers per sample against a shared chromosomal baseline.
+
+### Statistical considerations
+
+- **Shared vs per-condition baseline**: Use a shared chromosomal baseline (median across all conditions) or compute one per condition? Per-condition is more robust if sequencing depth varies, but a shared baseline makes fold-changes directly comparable.
+- **Normalization**: Total read count differs between conditions. Normalizing to chromosomal coverage (which CopyCAT already does) inherently accounts for this — copy number is a ratio, not an absolute value.
+- **Replication gradient**: Fast-growing cells show a coverage gradient from origin to terminus on the chromosome. This inflates coverage near the origin and could bias the baseline. The split-level geometric mean helps dampen this, but for growth-rate comparisons, origin-proximal and terminus-proximal splits should be compared explicitly.
+- **Statistical testing**: With biological replicates, copy number differences between conditions can be tested (e.g., Mann-Whitney on per-split copy numbers). Without replicates, only descriptive comparison is possible.
