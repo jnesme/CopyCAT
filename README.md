@@ -116,6 +116,34 @@ Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
 Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
+### Split-smoothed results
+
+Comparison of the three split-based coverage estimators for elevated contigs. The chromosomal baseline is computed assembler-agnostically using the ±10% window on geometric-mean coverages of large contigs.
+
+#### S2052 (baseline: 216.7x, 26 chromosomal contigs)
+
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | Circular |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|----------|
+| 9 | 223,858 bp | 11 | 347.3 | 347.0 | 346.8 | 345.5 | **1.60** | yes |
+| 31 | 3,253 bp | 1 | 2163.7 | 2163.7 | 2163.7 | 2163.7 | **9.98** | |
+
+#### S2753 (baseline: 226.9x, 19 chromosomal contigs)
+
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|
+| 26 | 2,786 bp | 1 | 2547.0 | 2547.0 | 2547.0 | 2547.0 | **11.23** |
+| 30 | 1,077 bp | 1 | 2351.7 | 2351.7 | 2351.7 | 2351.7 | **10.37** |
+
+#### S2754 (baseline: 240.5x, 19 chromosomal contigs)
+
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|
+| 26 | 2,599 bp | 1 | 2695.7 | 2695.7 | 2695.7 | 2695.7 | **11.21** |
+| 30 | 1,106 bp | 1 | 660.1 | 660.1 | 660.1 | 660.1 | **2.74** |
+| 31 | 1,077 bp | 1 | 2519.3 | 2519.3 | 2519.3 | 2519.3 | **10.48** |
+
+In this dataset, the three estimators converge because coverage is highly uniform across splits (CV < 0.03 for all contigs). The small elevated contigs have only a single split, making the estimators identical. The difference between methods will matter more in noisier datasets (metagenomes, fragmented assemblies) where individual splits may be affected by repeat-driven multi-mapping or assembly artifacts.
+
 ## Running
 
 ### Anvi'o workflow
