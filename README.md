@@ -120,9 +120,23 @@ Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
 Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
-### Validated against known reference
+### Validation against complete reference: S2052ref
 
-S2052 has a complete reference assembly (V. coralliilyticus) consisting of two chromosomes and one 223,859 bp plasmid. CopyCAT correctly identified the plasmid (contig 9, 223,858 bp, 1.6 copies) as the only true plasmid. All other elevated contigs are collapsed rRNA operons.
+The same S2052 reads were mapped to the complete reference assembly of V. coralliilyticus strain S2052 ([GCF_000967465.2](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000967465.2/)), which consists of 3 replicons:
+
+| Replicon | Accession | Length | Coverage | CN (geom) | rRNA |
+|----------|-----------|--------|----------|-----------|------|
+| Chromosome 1 | NZ_CP063051.1 | 3,328,634 bp | 216.2x | **1.00** | yes |
+| Chromosome 2 | NZ_CP063052.1 | 1,884,472 bp | 216.7x | **1.00** | |
+| Plasmid | NZ_CP063053.1 | 223,859 bp | 347.2x | **1.60** | |
+
+Key observations:
+- Plasmid copy number (**1.60**) matches the draft assembly result exactly, validating the method
+- Both chromosomes are at 1.00x — the two-chromosome Vibrio architecture is correctly resolved
+- No elevated rRNA contigs — the ~10 rRNA operons are resolved within the chromosomes instead of collapsing into separate high-copy contigs
+- rRNA is detected on chromosome 1 (16S via HMM); 23S is present but not flagged by anvi'o's default HMMs
+
+This confirms that CopyCAT's coverage-based approach is robust: it produces the same copy number estimate regardless of whether the input is a fragmented draft assembly or a complete reference genome.
 
 ### Split-smoothed results
 
