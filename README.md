@@ -56,7 +56,33 @@ Before trusting a contig's copy number, the coefficient of variation (CV) of cov
 
 Runs `genomad end-to-end` on profiled contigs (>=1000 bp) to independently classify contigs as plasmid, virus, or chromosome using marker genes and neural networks.
 
-### 3. Integration
+### 3. Split-smoothed copy numbers (assembler-agnostic)
+
+An alternative approach (`scripts/04_copy_numbers_split_smoothed.py`) that removes the dependency on assembler-specific metadata:
+
+**Contig coverage from splits:**
+
+Instead of using anvi'o's position-level mean directly, the contig coverage is derived from its 20 kb splits. Three estimators are computed side by side:
+
+- **Arithmetic mean**: standard average of split coverages. Sensitive to outlier splits.
+- **Geometric mean**: exp(mean(log(split coverages))). Naturally dampens outliers in log-space — a 2x spike and a 0.5x dip cancel out, which is the right behavior for coverage. Used as the primary estimator.
+- **Median**: most robust to outliers but ignores information from non-central splits.
+
+For contigs with a single split (< 20 kb), all three are identical.
+
+**Assembler-agnostic chromosomal baseline:**
+
+Chromosomal contigs are identified purely from coverage, without requiring assembler-reported depth or circularity:
+
+1. Large contigs (>= 20 kb) form the candidate pool
+2. The median of their geometric-mean coverages defines the center
+3. Contigs within **±10%** of this median are classified as chromosomal
+
+The percentage window avoids the over-sensitivity of MAD-based approaches on clean data, and remains stable across noisy datasets.
+
+Assembler metadata (depth, circularity) is preserved as annotation columns when available (supports Unicycler, Flye, and similar assemblers) but does not drive the classification.
+
+### 4. Integration
 
 Results from both methods are merged. The small high-copy contigs (1–3 kb, ~10x copy number) are missed by geNomad, likely because they are too short for confident marker-based detection.
 
@@ -75,8 +101,8 @@ Also detected: provirus in contig 8 (236 kb).
 
 | Contig | Length | Copy # | geNomad | Notes |
 |--------|--------|--------|---------|-------|
-| 26 | 2,786 bp | **11.23** | chromosome | Small high-copy small high-copy element |
-| 30 | 1,077 bp | **10.37** | chromosome | Small high-copy small high-copy element |
+| 26 | 2,786 bp | **11.23** | chromosome | Small high-copy element |
+| 30 | 1,077 bp | **10.37** | chromosome | Small high-copy element |
 
 Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
@@ -124,8 +150,9 @@ done
 ### Copy number and split-level analysis
 
 ```bash
-python3 scripts/01_compute_copy_numbers.py
-python3 scripts/02_split_coverage_analysis.py
+python3 scripts/01_compute_copy_numbers.py      # assembler-metadata-based
+python3 scripts/02_split_coverage_analysis.py    # split CV verification
+python3 scripts/04_copy_numbers_split_smoothed.py  # split-smoothed, assembler-agnostic
 ```
 
 ### geNomad
@@ -154,6 +181,7 @@ python3 scripts/03_integrate_genomad.py
 | `scripts/01_compute_copy_numbers.py` | Compute copy numbers from contig coverage vs. median chromosomal baseline |
 | `scripts/02_split_coverage_analysis.py` | Analyze split-level coverage for intra-contig variation |
 | `scripts/03_integrate_genomad.py` | Merge geNomad classifications with copy number results |
+| `scripts/04_copy_numbers_split_smoothed.py` | Split-smoothed copy numbers (arith/geom/median), assembler-agnostic baseline |
 
 ## Output directories
 
@@ -179,3 +207,5 @@ python3 scripts/03_integrate_genomad.py
 | `results/split_coverage_stats.tsv` | Per-contig split-level coverage statistics (mean, std, CV) |
 | `results/elevated_contigs_splits.tsv` | Split-level coverage for elevated copy number contigs |
 | `results/copy_numbers_with_genomad.tsv` | Integrated copy numbers + geNomad classification |
+| `results/copy_numbers_split_smoothed.tsv` | Split-smoothed copy numbers (3 estimators) + assembler annotations |
+| `results/copy_numbers_split_smoothed_summary.txt` | Human-readable summary of split-smoothed results |
