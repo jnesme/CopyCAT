@@ -82,39 +82,47 @@ The percentage window avoids the over-sensitivity of MAD-based approaches on cle
 
 Assembler metadata (depth, circularity) is preserved as annotation columns when available (supports Unicycler, Flye, and similar assemblers) but does not drive the classification.
 
-### 4. Integration
+### 4. rRNA filtering
 
-Results from both methods are merged. The small high-copy contigs (1–3 kb, ~10x copy number) are missed by geNomad, likely because they are too short for confident marker-based detection.
+Elevated copy number does not imply plasmid — collapsed multi-copy chromosomal elements (rRNA operons, IS elements) inflate coverage the same way. The script queries anvi'o's HMM results to flag contigs containing rRNA genes. Note: anvi'o's default HMMs only detect 16S/18S rRNA (via barrnap); 23S and 5S are not included. BLAST validation against NCBI nt is recommended for small elevated contigs not flagged by HMMs.
+
+### 5. Integration
+
+Results from all methods are merged. The small high-copy contigs (1–3 kb, ~10x copy number) turned out to be **collapsed rRNA operons**, not plasmids — confirmed by BLAST (100% identity to Vibrio coralliilyticus rRNA). geNomad missed them because they are too short for marker-based detection, and the coverage signal alone cannot distinguish multi-copy chromosomal elements from plasmids without additional annotation.
 
 ## Results
 
 ### S2052 (median chromosomal coverage: 216.7x)
 
-| Contig | Length | Circular | Copy # | geNomad | Notes |
-|--------|--------|----------|--------|---------|-------|
-| 9 | 223,858 bp | yes | **1.60** | plasmid (0.985) | Large plasmid, 7 hallmark genes, uniform split coverage |
-| 31 | 3,253 bp | no | **9.98** | chromosome | Small high-copy element |
+| Contig | Length | Circular | Copy # | rRNA | geNomad | Notes |
+|--------|--------|----------|--------|------|---------|-------|
+| 9 | 223,858 bp | yes | **1.60** | | plasmid (0.985) | Confirmed plasmid — matches known V. coralliilyticus plasmid |
+| 31 | 3,253 bp | no | **9.98** | 23S | chromosome | Collapsed rRNA operon (BLAST: 100% identity to V. coralliilyticus 23S) |
 
 Also detected: provirus in contig 8 (236 kb).
 
 ### S2753 (median chromosomal coverage: 226.8x)
 
-| Contig | Length | Copy # | geNomad | Notes |
-|--------|--------|--------|---------|-------|
-| 26 | 2,786 bp | **11.23** | chromosome | Small high-copy element |
-| 30 | 1,077 bp | **10.37** | chromosome | Small high-copy element |
+| Contig | Length | Copy # | rRNA | geNomad | Notes |
+|--------|--------|--------|------|---------|-------|
+| 26 | 2,786 bp | **11.23** | | chromosome | Collapsed rRNA operon (pending BLAST confirmation) |
+| 30 | 1,077 bp | **10.37** | 16S | chromosome | Collapsed rRNA operon (flagged by HMM) |
 
 Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
 
 ### S2754 (median chromosomal coverage: 240.5x)
 
-| Contig | Length | Copy # | geNomad | Notes |
-|--------|--------|--------|---------|-------|
-| 26 | 2,599 bp | **11.21** | chromosome | Homolog of S2753 contig 26 |
-| 30 | 1,106 bp | **2.74** | chromosome | Different copy # from S2753 homolog |
-| 31 | 1,077 bp | **10.48** | chromosome | Homolog of S2753 contig 30 |
+| Contig | Length | Copy # | rRNA | geNomad | Notes |
+|--------|--------|--------|------|---------|-------|
+| 26 | 2,599 bp | **11.21** | | chromosome | Collapsed rRNA operon (pending BLAST confirmation) |
+| 30 | 1,106 bp | **2.74** | | chromosome | Pending BLAST confirmation |
+| 31 | 1,077 bp | **10.48** | 16S | chromosome | Collapsed rRNA operon (flagged by HMM) |
 
 Also detected: proviruses in contigs 1 (1.46 Mb), 2 (609 kb), 6 (316 kb).
+
+### Validated against known reference
+
+S2052 has a complete reference assembly (V. coralliilyticus) consisting of two chromosomes and one 223,859 bp plasmid. CopyCAT correctly identified the plasmid (contig 9, 223,858 bp, 1.6 copies) as the only true plasmid. All other elevated contigs are collapsed rRNA operons.
 
 ### Split-smoothed results
 
@@ -122,27 +130,29 @@ Comparison of the three split-based coverage estimators for elevated contigs. Th
 
 #### S2052 (baseline: 216.7x, 26 chromosomal contigs)
 
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | Circular |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|----------|
-| 9 | 223,858 bp | 11 | 347.3 | 347.0 | 346.8 | 345.5 | **1.60** | yes |
-| 31 | 3,253 bp | 1 | 2163.7 | 2163.7 | 2163.7 | 2163.7 | **9.98** | |
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA | Circular |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|----------|
+| 9 | 223,858 bp | 11 | 347.3 | 347.0 | 346.8 | 345.5 | **1.60** | | yes |
+| 31 | 3,253 bp | 1 | 2163.7 | 2163.7 | 2163.7 | 2163.7 | **9.98** | 23S* | |
 
 #### S2753 (baseline: 226.9x, 19 chromosomal contigs)
 
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|
-| 26 | 2,786 bp | 1 | 2547.0 | 2547.0 | 2547.0 | 2547.0 | **11.23** |
-| 30 | 1,077 bp | 1 | 2351.7 | 2351.7 | 2351.7 | 2351.7 | **10.37** |
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|
+| 26 | 2,786 bp | 1 | 2547.0 | 2547.0 | 2547.0 | 2547.0 | **11.23** | * |
+| 30 | 1,077 bp | 1 | 2351.7 | 2351.7 | 2351.7 | 2351.7 | **10.37** | 16S |
 
 #### S2754 (baseline: 240.5x, 19 chromosomal contigs)
 
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|
-| 26 | 2,599 bp | 1 | 2695.7 | 2695.7 | 2695.7 | 2695.7 | **11.21** |
-| 30 | 1,106 bp | 1 | 660.1 | 660.1 | 660.1 | 660.1 | **2.74** |
-| 31 | 1,077 bp | 1 | 2519.3 | 2519.3 | 2519.3 | 2519.3 | **10.48** |
+| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA |
+|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|
+| 26 | 2,599 bp | 1 | 2695.7 | 2695.7 | 2695.7 | 2695.7 | **11.21** | * |
+| 30 | 1,106 bp | 1 | 660.1 | 660.1 | 660.1 | 660.1 | **2.74** | * |
+| 31 | 1,077 bp | 1 | 2519.3 | 2519.3 | 2519.3 | 2519.3 | **10.48** | 16S |
 
-In this dataset, the three estimators converge because coverage is highly uniform across splits (CV < 0.03 for all contigs). The small elevated contigs have only a single split, making the estimators identical. The difference between methods will matter more in noisier datasets (metagenomes, fragmented assemblies) where individual splits may be affected by repeat-driven multi-mapping or assembly artifacts.
+\* = confirmed by BLAST, not detected by anvi'o HMMs (which only include 16S/18S models).
+
+In this dataset, the three estimators converge because coverage is highly uniform across splits (CV < 0.03 for all contigs). The small elevated contigs have only a single split, making the estimators identical. All elevated small contigs turned out to be collapsed rRNA operons. The only true plasmid (S2052 contig 9) was correctly identified by both coverage and geNomad.
 
 ## Running
 
