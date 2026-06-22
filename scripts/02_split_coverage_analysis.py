@@ -19,9 +19,9 @@ import csv
 import statistics
 import math
 
-SAMPLES = ["S2052", "S2753", "S2754"]
+SAMPLES = ["S2052", "S2753", "S2754", "S2052ref"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COVERAGE_DIR = os.path.join(BASE_DIR, "coverage")
+COVERAGE_DIR = os.path.join(BASE_DIR, "07_COVERAGE")
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 CV_THRESHOLD = 0.15

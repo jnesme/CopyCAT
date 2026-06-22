@@ -8,7 +8,7 @@ set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
 RESULTS="${BASEDIR}/results"
-COVERAGE="${BASEDIR}/coverage"
+COVERAGE="${BASEDIR}/07_COVERAGE"
 
 source /work3/josne/miniconda3/etc/profile.d/conda.sh
 conda activate anvio-9

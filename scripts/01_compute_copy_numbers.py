@@ -22,7 +22,7 @@ import statistics
 SAMPLES = ["S2052", "S2753", "S2754"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REFORMAT_DIR = os.path.join(BASE_DIR, "02_FASTA")
-COVERAGE_DIR = os.path.join(BASE_DIR, "coverage")
+COVERAGE_DIR = os.path.join(BASE_DIR, "07_COVERAGE")
 OUTPUT_DIR = os.path.join(BASE_DIR, "results")
 
 MIN_CONTIG_LENGTH_FOR_CHROMOSOMAL = 20000

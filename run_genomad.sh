@@ -15,7 +15,7 @@
 GENOMAD_DB="/work3/josne/Databases/genomad_db"
 THREADS=12
 BASEDIR="/work3/josne/Projects/Vibrio_Galathea3/PlasdmidCopyNum_Shengda"
-SAMPLES="S2052 S2753 S2754"
+SAMPLES="S2052 S2753 S2754 S2052ref"
 
 source /work3/josne/miniconda3/etc/profile.d/conda.sh
 conda activate /work3/josne/miniconda3/envs/genomad
@@ -32,7 +32,7 @@ echo "Threads:      ${THREADS}"
 echo "=========================================="
 
 for SAMPLE in ${SAMPLES}; do
-    CONTIGS="${BASEDIR}/coverage/${SAMPLE}_contigs-CONTIGS.fa"
+    CONTIGS="${BASEDIR}/07_COVERAGE/${SAMPLE}_contigs-CONTIGS.fa"
     OUTDIR="${BASEDIR}/genomad_out/${SAMPLE}"
 
     if [ ! -f "${CONTIGS}" ]; then

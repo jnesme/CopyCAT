@@ -27,10 +27,10 @@ import math
 import statistics
 import sqlite3
 
-SAMPLES = ["S2052", "S2753", "S2754"]
+SAMPLES = ["S2052", "S2753", "S2754", "S2052ref"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REFORMAT_DIR = os.path.join(BASE_DIR, "02_FASTA")
-COVERAGE_DIR = os.path.join(BASE_DIR, "coverage")
+COVERAGE_DIR = os.path.join(BASE_DIR, "07_COVERAGE")
 CONTIGS_DIR = os.path.join(BASE_DIR, "03_CONTIGS")
 OUTPUT_DIR = os.path.join(BASE_DIR, "results")
 
@@ -68,12 +68,38 @@ def get_rrna_contigs(sample):
     return rrna_contigs
 
 
+def get_contig_lengths_from_fasta(sample):
+    """Get contig lengths from the exported CONTIGS FASTA."""
+    fasta_path = os.path.join(COVERAGE_DIR, f"{sample}_contigs-CONTIGS.fa")
+    lengths = {}
+    if not os.path.exists(fasta_path):
+        return lengths
+    name = None
+    seq_len = 0
+    with open(fasta_path) as f:
+        for line in f:
+            if line.startswith(">"):
+                if name is not None:
+                    lengths[name] = seq_len
+                name = line[1:].strip().split()[0]
+                seq_len = 0
+            else:
+                seq_len += len(line.strip())
+        if name is not None:
+            lengths[name] = seq_len
+    return lengths
+
+
 def parse_reformat_report(sample):
-    """Parse the reformat report to extract assembler metadata (optional annotations)."""
+    """Parse the reformat report to extract assembler metadata (optional annotations).
+    Falls back to FASTA-derived lengths when headers lack length= tags."""
     path = os.path.join(REFORMAT_DIR, sample, f"{sample}-reformat-report.txt")
     contigs = {}
     if not os.path.exists(path):
         return contigs
+
+    fasta_lengths = get_contig_lengths_from_fasta(sample)
+
     with open(path) as f:
         for line in f:
             parts = line.strip().split("\t")
@@ -84,9 +110,11 @@ def parse_reformat_report(sample):
             depth_match = re.search(r"depth=([\d.]+)x", original_header)
             circular = "circular=true" in original_header
 
+            length = int(length_match.group(1)) if length_match else fasta_lengths.get(new_name, 0)
+
             contigs[new_name] = {
                 "original_id": original_header.split()[0],
-                "length": int(length_match.group(1)) if length_match else 0,
+                "length": length,
                 "assembler_depth": float(depth_match.group(1)) if depth_match else None,
                 "circular": circular,
             }

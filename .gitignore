@@ -16,8 +16,8 @@ input_genomes/
 06_MERGED/
 
 # Coverage FASTA files (large), keep TSVs
-coverage/*-CONTIGS.fa
-coverage/*-SPLITS.fa
+07_COVERAGE/*-CONTIGS.fa
+07_COVERAGE/*-SPLITS.fa
 
 # geNomad intermediates (keep summary TSVs via results/)
 genomad_out/
