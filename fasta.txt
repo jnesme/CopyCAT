@@ -1,0 +1,4 @@
+name	path
+S2052	input_genomes/S2052.scaffolds.fa.gz
+S2753	input_genomes/S2753.scaffolds.fa.gz
+S2754	input_genomes/S2754.scaffolds.fa.gz

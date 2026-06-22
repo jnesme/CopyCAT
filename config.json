@@ -1,0 +1,54 @@
+{
+    "fasta_txt": "fasta.txt",
+    "samples_txt": "samples.txt",
+    "references_mode": true,
+    "anvi_gen_contigs_database": {
+        "--project-name": "{group}",
+        "--split-length": 20000
+    },
+    "anvi_script_reformat_fasta": {
+        "run": true,
+        "--prefix": "{group}",
+        "--simplify-names": true
+    },
+    "iu_filter_quality_minoche": {
+        "run": true,
+        "--ignore-deflines": true
+    },
+    "bowtie": {
+        "additional_params": "--no-unal",
+        "threads": 4
+    },
+    "samtools_view": {
+        "additional_params": "-F 4"
+    },
+    "anvi_profile": {
+        "threads": 4,
+        "--min-contig-length": 1000,
+        "--overwrite-output-destinations": true
+    },
+    "anvi_merge": {
+        "--sample-name": "{group}",
+        "--overwrite-output-destinations": true
+    },
+    "anvi_run_hmms": {
+        "run": true,
+        "threads": 4
+    },
+    "anvi_run_kegg_kofams": { "run": false },
+    "anvi_run_ncbi_cogs": { "run": false },
+    "anvi_run_scg_taxonomy": { "run": false },
+    "centrifuge": { "run": false },
+    "output_dirs": {
+        "FASTA_DIR": "02_FASTA",
+        "CONTIGS_DIR": "03_CONTIGS",
+        "QC_DIR": "01_QC",
+        "MAPPING_DIR": "04_MAPPING",
+        "PROFILE_DIR": "05_ANVIO_PROFILE",
+        "MERGE_DIR": "06_MERGED",
+        "LOGS_DIR": "00_LOGS"
+    },
+    "max_threads": 12,
+    "config_version": "4",
+    "workflow_name": "metagenomics"
+}

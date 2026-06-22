@@ -1,0 +1,30 @@
+# Snakemake internals
+.snakemake/
+.SNAKEMAKEDEBUG
+
+# Large data — input reads and genomes
+input_reads/
+input_genomes/
+
+# Workflow intermediates
+00_LOGS/
+01_QC/
+02_FASTA/
+03_CONTIGS/
+04_MAPPING/
+05_ANVIO_PROFILE/
+06_MERGED/
+
+# Coverage FASTA files (large), keep TSVs
+coverage/*-CONTIGS.fa
+coverage/*-SPLITS.fa
+
+# geNomad intermediates (keep summary TSVs via results/)
+genomad_out/
+
+# LSF job logs
+*.out
+*.err
+
+# Workflow graph source
+workflow.dot

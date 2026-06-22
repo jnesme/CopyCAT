@@ -1,0 +1,125 @@
+
+======================================================================
+Sample: S2052
+======================================================================
+  Total contigs profiled:     31
+  Chromosomal contigs:        26
+  Median chromosomal coverage: 216.74x
+  Elevated copy number (>=1.5x): 2
+
+  Contig                        Length  Circ   Coverage  CopyNum Class
+  ------------------------- ---------- ----- ---------- -------- ----------------
+  S2052_000000000001           942,930 False      216.0     1.00 chromosomal
+  S2052_000000000002           498,332 False      217.3     1.00 chromosomal
+  S2052_000000000003           497,057 False      215.3     0.99 chromosomal
+  S2052_000000000004           467,855 False      216.8     1.00 chromosomal
+  S2052_000000000005           384,214 False      218.9     1.01 chromosomal
+  S2052_000000000006           302,894 False      215.3     0.99 chromosomal
+  S2052_000000000007           263,158 False      216.1     1.00 chromosomal
+  S2052_000000000008           236,800 False      220.8     1.02 chromosomal
+  S2052_000000000009           223,858  True      347.3     1.60 putative_plasmid*
+  S2052_000000000010           206,816 False      218.0     1.01 chromosomal
+  S2052_000000000011           164,722 False      218.6     1.01 chromosomal
+  S2052_000000000012           162,828 False      211.4     0.98 chromosomal
+  S2052_000000000013           121,196 False      213.1     0.98 chromosomal
+  S2052_000000000014           107,468 False      215.9     1.00 chromosomal
+  S2052_000000000015            91,507 False      212.2     0.98 chromosomal
+  S2052_000000000016            87,045 False      218.5     1.01 chromosomal
+  S2052_000000000017            86,254 False      215.8     1.00 chromosomal
+  S2052_000000000018            82,469 False      219.7     1.01 chromosomal
+  S2052_000000000019            79,543 False      213.2     0.98 chromosomal
+  S2052_000000000020            77,715 False      217.8     1.00 chromosomal
+  S2052_000000000021            60,961 False      219.3     1.01 chromosomal
+  S2052_000000000022            54,199 False      216.7     1.00 chromosomal
+  S2052_000000000023            50,031 False      217.0     1.00 chromosomal
+  S2052_000000000024            47,184 False      216.8     1.00 chromosomal
+  S2052_000000000025            40,709 False      213.2     0.98 chromosomal
+  S2052_000000000026            35,447 False      219.4     1.01 chromosomal
+  S2052_000000000027            28,553 False      208.5     0.96 chromosomal
+  S2052_000000000028             8,926 False      206.1     0.95 uncertain
+  S2052_000000000029             5,959 False      214.4     0.99 uncertain
+  S2052_000000000030             5,024 False      209.4     0.97 uncertain
+  S2052_000000000031             3,253 False     2163.7     9.98 putative_plasmid*
+
+======================================================================
+Sample: S2753
+======================================================================
+  Total contigs profiled:     30
+  Chromosomal contigs:        19
+  Median chromosomal coverage: 226.82x
+  Elevated copy number (>=1.5x): 2
+
+  Contig                        Length  Circ   Coverage  CopyNum Class
+  ------------------------- ---------- ----- ---------- -------- ----------------
+  S2753_000000000001         1,463,763 False      226.6     1.00 chromosomal
+  S2753_000000000002           608,947 False      227.2     1.00 chromosomal
+  S2753_000000000003           445,408 False      226.9     1.00 chromosomal
+  S2753_000000000004           352,768 False      227.8     1.00 chromosomal
+  S2753_000000000005           321,030 False      237.0     1.04 chromosomal
+  S2753_000000000006           316,465 False      228.2     1.01 chromosomal
+  S2753_000000000007           284,439 False      225.4     0.99 chromosomal
+  S2753_000000000008           279,583 False      226.8     1.00 chromosomal
+  S2753_000000000009           201,473 False      228.6     1.01 chromosomal
+  S2753_000000000010           194,711 False      224.2     0.99 chromosomal
+  S2753_000000000011           148,687 False      222.6     0.98 chromosomal
+  S2753_000000000012           145,604 False      226.3     1.00 chromosomal
+  S2753_000000000013           138,635 False      225.3     0.99 chromosomal
+  S2753_000000000014           109,140 False      223.3     0.98 chromosomal
+  S2753_000000000015           102,377 False      221.8     0.98 chromosomal
+  S2753_000000000016            91,772 False      224.6     0.99 chromosomal
+  S2753_000000000017            84,070 False      228.3     1.01 chromosomal
+  S2753_000000000018            73,177 False      227.2     1.00 chromosomal
+  S2753_000000000019            65,685 False      229.0     1.01 chromosomal
+  S2753_000000000020            13,459 False      220.6     0.97 uncertain
+  S2753_000000000021             4,272 False      216.0     0.95 uncertain
+  S2753_000000000022             4,042 False      207.2     0.91 uncertain
+  S2753_000000000023             3,996 False      218.1     0.96 uncertain
+  S2753_000000000024             3,930 False      202.3     0.89 uncertain
+  S2753_000000000025             3,286 False      195.0     0.86 uncertain
+  S2753_000000000026             2,786 False     2547.0    11.23 putative_plasmid*
+  S2753_000000000027             2,257 False      201.8     0.89 uncertain
+  S2753_000000000028             1,511 False      208.4     0.92 uncertain
+  S2753_000000000029             1,382 False      274.9     1.21 uncertain
+  S2753_000000000030             1,077 False     2351.7    10.37 putative_plasmid*
+
+======================================================================
+Sample: S2754
+======================================================================
+  Total contigs profiled:     31
+  Chromosomal contigs:        19
+  Median chromosomal coverage: 240.50x
+  Elevated copy number (>=1.5x): 3
+
+  Contig                        Length  Circ   Coverage  CopyNum Class
+  ------------------------- ---------- ----- ---------- -------- ----------------
+  S2754_000000000001         1,463,763 False      240.1     1.00 chromosomal
+  S2754_000000000002           608,981 False      240.9     1.00 chromosomal
+  S2754_000000000003           445,408 False      244.0     1.01 chromosomal
+  S2754_000000000004           352,768 False      242.8     1.01 chromosomal
+  S2754_000000000005           321,070 False      260.1     1.08 chromosomal
+  S2754_000000000006           316,465 False      245.5     1.02 chromosomal
+  S2754_000000000007           284,205 False      237.7     0.99 chromosomal
+  S2754_000000000008           279,582 False      243.1     1.01 chromosomal
+  S2754_000000000009           201,472 False      243.6     1.01 chromosomal
+  S2754_000000000010           194,711 False      236.4     0.98 chromosomal
+  S2754_000000000011           148,687 False      234.0     0.97 chromosomal
+  S2754_000000000012           145,604 False      240.5     1.00 chromosomal
+  S2754_000000000013           138,635 False      241.1     1.00 chromosomal
+  S2754_000000000014           109,140 False      236.4     0.98 chromosomal
+  S2754_000000000015           102,377 False      229.4     0.95 chromosomal
+  S2754_000000000016            91,772 False      234.7     0.98 chromosomal
+  S2754_000000000017            84,070 False      236.1     0.98 chromosomal
+  S2754_000000000018            73,177 False      239.6     1.00 chromosomal
+  S2754_000000000019            65,685 False      243.9     1.01 chromosomal
+  S2754_000000000020            13,459 False      238.4     0.99 uncertain
+  S2754_000000000021             4,272 False      232.8     0.97 uncertain
+  S2754_000000000022             4,042 False      218.0     0.91 uncertain
+  S2754_000000000023             3,996 False      237.3     0.99 uncertain
+  S2754_000000000024             3,930 False      224.9     0.94 uncertain
+  S2754_000000000025             3,286 False      206.3     0.86 uncertain
+  S2754_000000000026             2,599 False     2695.7    11.21 putative_plasmid*
+  S2754_000000000027             2,257 False      214.4     0.89 uncertain
+  S2754_000000000028             1,511 False      222.5     0.93 uncertain
+  S2754_000000000029             1,382 False      300.7     1.25 uncertain
+  S2754_000000000030             1,106 False      660.1     2.74 putative_plasmid*
+  S2754_000000000031             1,077 False     2519.3    10.48 putative_plasmid*
