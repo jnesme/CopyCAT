@@ -25,11 +25,13 @@ import re
 import csv
 import math
 import statistics
+import sqlite3
 
 SAMPLES = ["S2052", "S2753", "S2754"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REFORMAT_DIR = os.path.join(BASE_DIR, "02_FASTA")
 COVERAGE_DIR = os.path.join(BASE_DIR, "coverage")
+CONTIGS_DIR = os.path.join(BASE_DIR, "03_CONTIGS")
 OUTPUT_DIR = os.path.join(BASE_DIR, "results")
 
 MIN_CONTIG_LENGTH_FOR_CHROMOSOMAL = 20000
@@ -42,6 +44,28 @@ def geometric_mean(values):
         return 0.0
     log_sum = sum(math.log(v) for v in values)
     return math.exp(log_sum / len(values))
+
+
+def get_rrna_contigs(sample):
+    """
+    Query the anvi'o contigs database to find contigs containing rRNA genes.
+    Joins hmm_hits (source like 'Ribosomal_RNA%') -> genes_in_contigs -> contig name.
+    Returns a set of contig names that contain rRNA hits.
+    """
+    db_path = os.path.join(CONTIGS_DIR, f"{sample}-contigs.db")
+    if not os.path.exists(db_path):
+        return set()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.execute("""
+        SELECT DISTINCT g.contig
+        FROM hmm_hits h
+        JOIN genes_in_contigs g ON h.gene_callers_id = g.gene_callers_id
+        WHERE h.source LIKE 'Ribosomal_RNA%'
+    """)
+    rrna_contigs = {row[0] for row in cursor}
+    conn.close()
+    return rrna_contigs
 
 
 def parse_reformat_report(sample):
@@ -147,6 +171,7 @@ def compute_copy_numbers(sample):
     splits_by_contig = parse_split_coverage(sample)
     anvio_contig_covs = parse_contig_coverage(sample)
     smoothed = compute_split_smoothed_coverages(splits_by_contig)
+    rrna_contigs = get_rrna_contigs(sample)
 
     chromosomal = identify_chromosomal_contigs(contigs_meta, smoothed)
     chr_covs = [smoothed[c]["geom_mean"] for c in chromosomal]
@@ -162,6 +187,7 @@ def compute_copy_numbers(sample):
         cn_geom = sm["geom_mean"] / baseline
         cn_median = sm["median"] / baseline
         is_chromosomal = name in chromosomal
+        has_rrna = name in rrna_contigs
         is_elevated = cn_geom >= COPY_NUMBER_THRESHOLD
 
         results.append({
@@ -179,6 +205,7 @@ def compute_copy_numbers(sample):
             "cn_arith_mean": round(cn_arith, 2),
             "cn_geom_mean": round(cn_geom, 2),
             "cn_median": round(cn_median, 2),
+            "has_rrna": has_rrna,
             "classification": "chromosomal" if is_chromosomal else (
                 "putative_plasmid" if is_elevated else "uncertain"
             ),
@@ -211,20 +238,21 @@ def main():
         summary_lines.append(
             f"  {'Contig':<25} {'Length':>8} {'Splits':>6} "
             f"{'Anvi.o':>8} {'Arith':>8} {'Geom':>8} {'Median':>8} "
-            f"{'CN_geo':>7} {'Circ':>5} {'Class'}"
+            f"{'CN_geo':>7} {'rRNA':>5} {'Circ':>5} {'Class'}"
         )
         summary_lines.append(
             f"  {'-'*25} {'-'*8} {'-'*6} "
             f"{'-'*8} {'-'*8} {'-'*8} {'-'*8} "
-            f"{'-'*7} {'-'*5} {'-'*16}"
+            f"{'-'*7} {'-'*5} {'-'*5} {'-'*16}"
         )
         for r in results:
             circ_str = "yes" if r["circular"] is True else ""
+            rrna_str = "yes" if r["has_rrna"] else ""
             summary_lines.append(
                 f"  {r['contig']:<25} {r['length']:>8,} {r['n_splits']:>6} "
                 f"{r['anvio_mean_cov']:>8.1f} {r['split_arith_mean_cov']:>8.1f} "
                 f"{r['split_geom_mean_cov']:>8.1f} {r['split_median_cov']:>8.1f} "
-                f"{r['cn_geom_mean']:>7.2f} {circ_str:>5} {r['classification']}"
+                f"{r['cn_geom_mean']:>7.2f} {rrna_str:>5} {circ_str:>5} {r['classification']}"
             )
 
     out_tsv = os.path.join(OUTPUT_DIR, "copy_numbers_split_smoothed.tsv")
