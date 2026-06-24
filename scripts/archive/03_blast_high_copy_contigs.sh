@@ -2,7 +2,7 @@
 # Extract high-copy contigs and BLAST against NCBI nt
 #
 # Requires: anvio-9 conda env (blastn, biopython)
-# Usage: bash scripts/05_blast_high_copy_contigs.sh
+# Usage: bash scripts/03_blast_high_copy_contigs.sh
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ results_dir = sys.argv[1]
 coverage_dir = sys.argv[2]
 
 elevated = set()
-with open(f"{results_dir}/copy_numbers_split_smoothed.tsv") as f:
+with open(f"{results_dir}/copy_numbers.tsv") as f:
     for row in csv.DictReader(f, delimiter="\t"):
         if row["classification"] == "putative_plasmid":
             elevated.add((row["sample"], row["contig"]))

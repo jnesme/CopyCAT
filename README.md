@@ -1,6 +1,64 @@
 # CopyCAT — Copy number from Coverage Analysis Tool
 
-Initial test case applying the CopyCAT approach to three Vibrio isolate genomes (S2052, S2753, S2754) from the Galathea3 expedition. Built on anvi'o 9 under the hood: contigs are split into ~20 kb windows, enabling split-level coverage inspection to verify that coverage is uniform along each contig before reporting a copy number. This guards against chimeric contigs or localized mapping artifacts inflating estimates. Results are cross-validated with geNomad sequence-based classification.
+Estimate plasmid copy numbers from short-read coverage using anvi'o 9 under the hood. Contigs are split into ~20 kb windows, enabling split-level coverage inspection to verify that coverage is uniform along each contig before reporting a copy number. This guards against chimeric contigs or localized mapping artifacts inflating estimates. Results are cross-validated with geNomad sequence-based classification.
+
+## How to use
+
+### Prerequisites
+
+- [anvi'o 9](https://anvio.org/) (`conda activate anvio-9`)
+- [geNomad](https://github.com/apcamargo/genomad) (optional, for sequence-based cross-validation)
+- Input genomes in `input_genomes/` and paired-end reads in `input_reads/<sample>/`
+- `fasta.txt` and `samples.txt` configured (see [Data](#data) section)
+
+### 1. Run the anvi'o metagenomics workflow
+
+```bash
+conda activate anvio-9
+
+# Validate config (dry-run)
+anvi-run-workflow -w metagenomics -c config.json --dry-run
+
+# Submit to LSF (or run locally)
+bsub < run_anvio_workflow.sh
+```
+
+This runs QC, read mapping, contig profiling with 20 kb splits, and HMMs for all samples defined in `samples.txt`.
+
+### 2. Export coverage data
+
+```bash
+conda activate anvio-9
+bash scripts/00_export_coverage.sh
+```
+
+Exports contig-level and split-level coverages to `07_COVERAGE/`. Skips samples already exported. Handles both merged profiles (multi-sample groups) and single-sample profiles automatically.
+
+### 3. Annotate contigs
+
+```bash
+python3 scripts/01a_annotate_contigs.py
+```
+
+Collects per-contig features: split-smoothed coverage (arithmetic mean, geometric mean, median), coefficient of variation, HMM hit counts per source (Bacteria_71, Archaea_76, Protista_83, Ribosomal_RNA_16S), and assembler metadata when available.
+
+### 4. Cross-validate with geNomad (optional)
+
+```bash
+bsub < run_genomad.sh
+# After completion:
+python3 scripts/01b_integrate_genomad.py
+```
+
+Adds geNomad plasmid/virus classification columns to the annotation table. Skips cleanly if geNomad hasn't been run.
+
+### 5. Compute copy numbers
+
+```bash
+python3 scripts/02_compute_copy_numbers.py
+```
+
+Reads the annotated table, identifies the chromosomal baseline, and computes copy numbers. Classification logic lives here — edit this script to refine rules (e.g., require bacterial SCGs for baseline).
 
 ## Data
 
@@ -31,44 +89,14 @@ Uses the **anvi'o metagenomics workflow** in `references_mode`:
 For each sample, the copy number of a contig is computed as:
 
 ```
-copy_number = coverage(contig) / median_coverage(chromosomal contigs)
+copy_number = coverage_geom_mean(contig) / median_coverage_geom_mean(chromosomal contigs)
 ```
-
-**Establishing the chromosomal baseline:**
-
-1. Contigs are classified as chromosomal if they satisfy all three criteria:
-   - Length >= 20 kb (long enough to be reliable)
-   - Assembler-reported depth between 0.8x and 1.3x (consistent with single-copy)
-   - Not marked as circular by the assembler
-2. The **median** coverage across all chromosomal contigs is used as the baseline. Median is preferred over mean because it is robust to outliers from rRNA operons or repeat regions.
-
-**Split-level verification:**
-
-Before trusting a contig's copy number, the coefficient of variation (CV) of coverage across its 20 kb splits is checked. A low CV (< 0.15) confirms that coverage is uniform along the contig — ruling out chimeric assemblies, partial duplications, or localized mapping artifacts that would inflate the mean coverage. All elevated contigs in this dataset passed this check.
-
-**Interpretation:**
-
-- Copy number ~1.0: single-copy, chromosomal
-- Copy number 1.5–2.0: low-copy plasmid or recent duplication
-- Copy number >> 1: multi-copy plasmid (e.g., ~10x = ~10 copies per chromosome)
-
-### 2. Sequence-based classification (geNomad)
-
-Runs `genomad end-to-end` on profiled contigs (>=1000 bp) to independently classify contigs as plasmid, virus, or chromosome using marker genes and neural networks.
-
-### 3. Split-smoothed copy numbers (assembler-agnostic)
-
-An alternative approach (`scripts/04_copy_numbers_split_smoothed.py`) that removes the dependency on assembler-specific metadata:
 
 **Contig coverage from splits:**
 
-Instead of using anvi'o's position-level mean directly, the contig coverage is derived from its 20 kb splits. Three estimators are computed side by side:
+Rather than using anvi'o's position-level mean directly, contig coverage is derived from its 20 kb splits using the **geometric mean** (exp(mean(log(split coverages)))). This naturally dampens outlier splits in log-space — a 2x spike and a 0.5x dip cancel out, which is the right behavior for coverage data. The arithmetic mean and median of split coverages are also reported as diagnostic columns for QC.
 
-- **Arithmetic mean**: standard average of split coverages. Sensitive to outlier splits.
-- **Geometric mean**: exp(mean(log(split coverages))). Naturally dampens outliers in log-space — a 2x spike and a 0.5x dip cancel out, which is the right behavior for coverage. Used as the primary estimator.
-- **Median**: most robust to outliers but ignores information from non-central splits.
-
-For contigs with a single split (< 20 kb), all three are identical.
+For contigs with a single split (< 20 kb), all estimators are identical.
 
 **Assembler-agnostic chromosomal baseline:**
 
@@ -82,13 +110,23 @@ The percentage window avoids the over-sensitivity of MAD-based approaches on cle
 
 Assembler metadata (depth, circularity) is preserved as annotation columns when available (supports Unicycler, Flye, and similar assemblers) but does not drive the classification.
 
-### 4. rRNA filtering
+**Split-level verification:**
+
+The coefficient of variation (CV) of coverage across a contig's 20 kb splits is reported. A low CV (< 0.15) confirms uniform coverage — ruling out chimeric assemblies, partial duplications, or localized mapping artifacts.
+
+**Interpretation:**
+
+- Copy number ~1.0: single-copy, chromosomal
+- Copy number 1.5–2.0: low-copy plasmid or recent duplication
+- Copy number >> 1: multi-copy plasmid (e.g., ~10x = ~10 copies per chromosome)
+
+### 2. rRNA filtering
 
 Elevated copy number does not imply plasmid — collapsed multi-copy chromosomal elements (rRNA operons, IS elements) inflate coverage the same way. The script queries anvi'o's HMM results to flag contigs containing rRNA genes. Note: anvi'o's default HMMs only detect 16S/18S rRNA (via barrnap); 23S and 5S are not included. BLAST validation against NCBI nt is recommended for small elevated contigs not flagged by HMMs.
 
-### 5. Integration
+### 3. Sequence-based classification (geNomad, optional)
 
-Results from all methods are merged. The small high-copy contigs (1–3 kb, ~10x copy number) turned out to be **collapsed rRNA operons**, not plasmids — confirmed by BLAST (100% identity to Vibrio coralliilyticus rRNA). geNomad missed them because they are too short for marker-based detection, and the coverage signal alone cannot distinguish multi-copy chromosomal elements from plasmids without additional annotation.
+Runs `genomad end-to-end` on profiled contigs (>=1000 bp) to independently classify contigs as plasmid, virus, or chromosome using marker genes and neural networks. Results are merged with copy numbers by `scripts/02_integrate_genomad.py`.
 
 ## Results
 
@@ -138,83 +176,6 @@ Key observations:
 
 This confirms that CopyCAT's coverage-based approach is robust: it produces the same copy number estimate regardless of whether the input is a fragmented draft assembly or a complete reference genome.
 
-### Split-smoothed results
-
-Comparison of the three split-based coverage estimators for elevated contigs. The chromosomal baseline is computed assembler-agnostically using the ±10% window on geometric-mean coverages of large contigs.
-
-#### S2052 (baseline: 216.7x, 26 chromosomal contigs)
-
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA | Circular |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|----------|
-| 9 | 223,858 bp | 11 | 347.3 | 347.0 | 346.8 | 345.5 | **1.60** | | yes |
-| 31 | 3,253 bp | 1 | 2163.7 | 2163.7 | 2163.7 | 2163.7 | **9.98** | 23S* | |
-
-#### S2753 (baseline: 226.9x, 19 chromosomal contigs)
-
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|
-| 26 | 2,786 bp | 1 | 2547.0 | 2547.0 | 2547.0 | 2547.0 | **11.23** | * |
-| 30 | 1,077 bp | 1 | 2351.7 | 2351.7 | 2351.7 | 2351.7 | **10.37** | 16S |
-
-#### S2754 (baseline: 240.5x, 19 chromosomal contigs)
-
-| Contig | Length | Splits | Anvi'o mean | Arith mean | Geom mean | Median | CN (geom) | rRNA |
-|--------|--------|--------|-------------|------------|-----------|--------|-----------|------|
-| 26 | 2,599 bp | 1 | 2695.7 | 2695.7 | 2695.7 | 2695.7 | **11.21** | * |
-| 30 | 1,106 bp | 1 | 660.1 | 660.1 | 660.1 | 660.1 | **2.74** | * |
-| 31 | 1,077 bp | 1 | 2519.3 | 2519.3 | 2519.3 | 2519.3 | **10.48** | 16S |
-
-\* = confirmed by BLAST, not detected by anvi'o HMMs (which only include 16S/18S models).
-
-In this dataset, the three estimators converge because coverage is highly uniform across splits (CV < 0.03 for all contigs). The small elevated contigs have only a single split, making the estimators identical. All elevated small contigs turned out to be collapsed rRNA operons. The only true plasmid (S2052 contig 9) was correctly identified by both coverage and geNomad.
-
-## Running
-
-### Anvi'o workflow
-
-```bash
-source /work3/josne/miniconda3/etc/profile.d/conda.sh
-conda activate anvio-9
-
-# Validate config
-anvi-run-workflow -w metagenomics -c config.json --dry-run
-
-# Submit
-bsub < run_anvio_workflow.sh
-```
-
-### Extract coverage (after workflow completes)
-
-```bash
-conda activate anvio-9
-for sample in S2052 S2753 S2754; do
-    anvi-export-splits-and-coverages \
-        -p 05_ANVIO_PROFILE/${sample}/${sample}/PROFILE.db \
-        -c 03_CONTIGS/${sample}-contigs.db \
-        --report-contigs -o 07_COVERAGE -O ${sample}_contigs
-    anvi-export-splits-and-coverages \
-        -p 05_ANVIO_PROFILE/${sample}/${sample}/PROFILE.db \
-        -c 03_CONTIGS/${sample}-contigs.db \
-        --splits-mode -o 07_COVERAGE -O ${sample}_splits
-done
-```
-
-### Copy number and split-level analysis
-
-```bash
-python3 scripts/01_compute_copy_numbers.py      # assembler-metadata-based
-python3 scripts/02_split_coverage_analysis.py    # split CV verification
-python3 scripts/04_copy_numbers_split_smoothed.py  # split-smoothed, assembler-agnostic
-```
-
-### geNomad
-
-```bash
-bsub < run_genomad.sh
-# After completion:
-python3 scripts/03_integrate_genomad.py
-```
-
 ## Files
 
 | File | Description |
@@ -230,10 +191,10 @@ python3 scripts/03_integrate_genomad.py
 
 | Script | Description |
 |--------|-------------|
-| `scripts/01_compute_copy_numbers.py` | Compute copy numbers from contig coverage vs. median chromosomal baseline |
-| `scripts/02_split_coverage_analysis.py` | Analyze split-level coverage for intra-contig variation |
-| `scripts/03_integrate_genomad.py` | Merge geNomad classifications with copy number results |
-| `scripts/04_copy_numbers_split_smoothed.py` | Split-smoothed copy numbers (arith/geom/median), assembler-agnostic baseline |
+| `scripts/00_export_coverage.sh` | Export contig and split-level coverages from anvi'o profiles to `07_COVERAGE/` |
+| `scripts/01a_annotate_contigs.py` | Annotate contigs: split-smoothed coverage, HMM hit counts, assembler metadata |
+| `scripts/01b_integrate_genomad.py` | Add geNomad plasmid/virus classification to annotations (optional) |
+| `scripts/02_compute_copy_numbers.py` | Compute copy numbers from annotated contigs, classify chromosome/plasmid |
 
 ## Output directories
 
@@ -254,13 +215,9 @@ python3 scripts/03_integrate_genomad.py
 
 | File | Description |
 |------|-------------|
-| `results/copy_numbers.tsv` | Per-contig copy numbers for all samples |
+| `results/contig_annotations.tsv` | Per-contig features: coverage stats, HMM counts, assembler metadata (+geNomad if 01b run) |
+| `results/copy_numbers.tsv` | Final copy numbers with classification |
 | `results/copy_numbers_summary.txt` | Human-readable summary |
-| `results/split_coverage_stats.tsv` | Per-contig split-level coverage statistics (mean, std, CV) |
-| `results/elevated_contigs_splits.tsv` | Split-level coverage for elevated copy number contigs |
-| `results/copy_numbers_with_genomad.tsv` | Integrated copy numbers + geNomad classification |
-| `results/copy_numbers_split_smoothed.tsv` | Split-smoothed copy numbers (3 estimators) + assembler annotations |
-| `results/copy_numbers_split_smoothed_summary.txt` | Human-readable summary of split-smoothed results |
 
 ## Roadmap: multi-condition copy number comparison
 

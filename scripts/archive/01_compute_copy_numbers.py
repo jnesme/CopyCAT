@@ -1,23 +1,9 @@
 #!/usr/bin/env python3
 """
-Compute plasmid copy numbers using split-smoothed coverage estimates.
-
-Differences from 01_compute_copy_numbers.py:
-  - Contig coverage is derived from splits (arithmetic mean, geometric mean, median)
-    rather than using anvi'o's position-level mean directly
-  - Chromosomal baseline is identified purely from coverage distribution
-    (no assembler metadata required)
-  - Assembler metadata (depth, circularity) is included as annotation columns
-    but does not drive the classification
-
-Chromosomal identification:
-  Large contigs (>= 20 kb) form the candidate pool. The median of their
-  geometric-mean coverages defines the center. Contigs within a percentage
-  window (default ±10%) of this median are classified as chromosomal.
-  This is assembler-agnostic and robust across tight and noisy distributions.
+CopyCAT — Compute plasmid copy numbers from split-smoothed coverage.
 
 Usage:
-    python scripts/04_copy_numbers_split_smoothed.py
+    python scripts/01_compute_copy_numbers.py
 """
 
 import os
@@ -27,7 +13,7 @@ import math
 import statistics
 import sqlite3
 
-SAMPLES = ["S2052", "S2753", "S2754", "S2052ref"]
+SAMPLES = ["S2052", "S2753", "S2754", "S2052ref", "S2753ref", "S2754ref", "S26ref"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REFORMAT_DIR = os.path.join(BASE_DIR, "02_FASTA")
 COVERAGE_DIR = os.path.join(BASE_DIR, "07_COVERAGE")
@@ -211,12 +197,10 @@ def compute_copy_numbers(sample):
         sm = smoothed[name]
         anvio_cov = anvio_contig_covs.get(name, 0)
 
-        cn_arith = sm["arith_mean"] / baseline
-        cn_geom = sm["geom_mean"] / baseline
-        cn_median = sm["median"] / baseline
+        copy_number = sm["geom_mean"] / baseline
         is_chromosomal = name in chromosomal
         has_rrna = name in rrna_contigs
-        is_elevated = cn_geom >= COPY_NUMBER_THRESHOLD
+        is_elevated = copy_number >= COPY_NUMBER_THRESHOLD
 
         results.append({
             "sample": sample,
@@ -230,9 +214,7 @@ def compute_copy_numbers(sample):
             "split_geom_mean_cov": round(sm["geom_mean"], 2),
             "split_median_cov": round(sm["median"], 2),
             "chromosomal_baseline": round(baseline, 2),
-            "cn_arith_mean": round(cn_arith, 2),
-            "cn_geom_mean": round(cn_geom, 2),
-            "cn_median": round(cn_median, 2),
+            "copy_number": round(copy_number, 2),
             "has_rrna": has_rrna,
             "classification": "chromosomal" if is_chromosomal else (
                 "putative_plasmid" if is_elevated else "uncertain"
@@ -265,31 +247,28 @@ def main():
         summary_lines.append("")
         summary_lines.append(
             f"  {'Contig':<25} {'Length':>8} {'Splits':>6} "
-            f"{'Anvi.o':>8} {'Arith':>8} {'Geom':>8} {'Median':>8} "
-            f"{'CN_geo':>7} {'rRNA':>5} {'Circ':>5} {'Class'}"
+            f"{'GeomCov':>8} {'CN':>7} {'rRNA':>5} {'Circ':>5} {'Class'}"
         )
         summary_lines.append(
             f"  {'-'*25} {'-'*8} {'-'*6} "
-            f"{'-'*8} {'-'*8} {'-'*8} {'-'*8} "
-            f"{'-'*7} {'-'*5} {'-'*5} {'-'*16}"
+            f"{'-'*8} {'-'*7} {'-'*5} {'-'*5} {'-'*16}"
         )
         for r in results:
             circ_str = "yes" if r["circular"] is True else ""
             rrna_str = "yes" if r["has_rrna"] else ""
             summary_lines.append(
                 f"  {r['contig']:<25} {r['length']:>8,} {r['n_splits']:>6} "
-                f"{r['anvio_mean_cov']:>8.1f} {r['split_arith_mean_cov']:>8.1f} "
-                f"{r['split_geom_mean_cov']:>8.1f} {r['split_median_cov']:>8.1f} "
-                f"{r['cn_geom_mean']:>7.2f} {rrna_str:>5} {circ_str:>5} {r['classification']}"
+                f"{r['split_geom_mean_cov']:>8.1f} "
+                f"{r['copy_number']:>7.2f} {rrna_str:>5} {circ_str:>5} {r['classification']}"
             )
 
-    out_tsv = os.path.join(OUTPUT_DIR, "copy_numbers_split_smoothed.tsv")
+    out_tsv = os.path.join(OUTPUT_DIR, "copy_numbers.tsv")
     with open(out_tsv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=all_results[0].keys(), delimiter="\t")
         writer.writeheader()
         writer.writerows(all_results)
 
-    out_summary = os.path.join(OUTPUT_DIR, "copy_numbers_split_smoothed_summary.txt")
+    out_summary = os.path.join(OUTPUT_DIR, "copy_numbers_summary.txt")
     summary_text = "\n".join(summary_lines)
     with open(out_summary, "w") as f:
         f.write(summary_text + "\n")
