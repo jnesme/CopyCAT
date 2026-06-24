@@ -31,23 +31,43 @@ def load_annotations():
         row["split_geom_mean_cov"] = float(row["split_geom_mean_cov"])
         row["split_arith_mean_cov"] = float(row["split_arith_mean_cov"])
         row["split_median_cov"] = float(row["split_median_cov"])
+        if "Bacteria_71" in row and row["Bacteria_71"]:
+            row["Bacteria_71"] = int(row["Bacteria_71"])
+        else:
+            row["Bacteria_71"] = None
     return rows
 
 
 def identify_chromosomal_contigs(sample_rows):
-    large = [(r["contig"], r["split_geom_mean_cov"])
-             for r in sample_rows
+    large = [r for r in sample_rows
              if r["length"] >= MIN_CONTIG_LENGTH_FOR_CHROMOSOMAL]
 
     if not large:
         return set()
 
-    coverages = [cov for _, cov in large]
-    med = statistics.median(coverages)
-    lo = med * (1 - CHROMOSOMAL_PERCENT_WINDOW)
-    hi = med * (1 + CHROMOSOMAL_PERCENT_WINDOW)
+    # Step 1: anchor on largest contig
+    anchor = max(large, key=lambda r: r["length"])
+    anchor_cov = anchor["split_geom_mean_cov"]
+    lo = anchor_cov * (1 - CHROMOSOMAL_PERCENT_WINDOW)
+    hi = anchor_cov * (1 + CHROMOSOMAL_PERCENT_WINDOW)
 
-    return {name for name, cov in large if lo <= cov <= hi}
+    # Step 2: candidate pool — large contigs within ±10% of anchor
+    candidates = [r for r in large if lo <= r["split_geom_mean_cov"] <= hi]
+
+    # Step 3: positive filter — keep candidates with bacterial SCGs
+    has_scg_data = any(r["Bacteria_71"] is not None for r in candidates)
+    if has_scg_data:
+        scg_filtered = [r for r in candidates if r["Bacteria_71"] and r["Bacteria_71"] > 0]
+        if scg_filtered:
+            candidates = scg_filtered
+
+    # Step 4: negative filter — exclude geNomad-classified plasmids
+    if any("genomad_class" in r for r in candidates):
+        filtered = [r for r in candidates if r.get("genomad_class") != "plasmid"]
+        if filtered:
+            candidates = filtered
+
+    return {r["contig"] for r in candidates}
 
 
 def compute_for_sample(sample_rows):
