@@ -209,6 +209,27 @@ Key observations:
 - **pS26_248** and **pS26_80**: sub-1x copy number (0.83–0.92x), suggesting plasmid loss during growth or slower replication than the chromosome
 - Without the SCG filter, the old median-of-large-contigs approach would have failed — 4 out of 5 large replicons are plasmids
 
+### Plasmid typing (mob_typer)
+
+Plasmid sequences were extracted from each reference genome (`scripts/extract_ref_plasmids.sh`) and typed with [MOB-suite](https://github.com/phac-nml/mob-suite) `mob_typer` (`scripts/run_mob_typer.sh`), one annotation per FASTA entry. Results in `results/mob_typer/`.
+
+| Sample | Accession | Size (bp) | Replicon type | Relaxase | Predicted mobility | Mash nearest neighbor | Distance | Primary cluster |
+|--------|-----------|-----------|---------------|----------|-------------------|----------------------|----------|-----------------|
+| S2052ref | NZ_CP063053.1 | 223,859 | — | — | non-mobilizable | *V. coralliilyticus* | 0.031 | AC648 |
+| S2753ref | 12165.1 | 323,546 | — | — | non-mobilizable | no match | 1.0 | AA379 |
+| S2754ref | 31931.2 | 323,532 | — | — | non-mobilizable | no match | 1.0 | AA379 |
+| S26ref — pS26_106 | NZ_CP080277.1 | 106,329 | — | — | non-mobilizable | no match | 1.0 | AA379 |
+| S26ref — pS26_248 | NZ_CP080276.1 | 248,209 | rep_cluster_377 | — | non-mobilizable | *P. piscinae* | 0.015 | AC739 |
+| S26ref — pS26_68 | NZ_CP080279.1 | 68,485 | rep_cluster_252, rep_cluster_735 | — | non-mobilizable | *P. piscinae* | 0.010 | AA429 |
+| S26ref — pS26_80 | NZ_CP080278.1 | 80,357 | rep_cluster_288 | — | non-mobilizable | *P. piscinae* | 0.015 | AB852 |
+
+Key observations:
+- **All elements are predicted non-mobilizable** — no relaxase or MPF type detected in any replicon.
+- **S2052ref plasmid**: no replicon type recognized, but Mash nearest neighbor is *V. coralliilyticus* (distance 0.031) — consistent with a host-specific plasmid.
+- **S26ref pS26_248, pS26_68, pS26_80**: replicon types identified (rep_cluster_252/288/377/735), all with close Mash matches to *Phaeobacter piscinae* — confirmed plasmids with known replication origins.
+- **S26ref pS26_106**: no replicon type, no Mash match (distance 1.0) — replication machinery unrecognized by the current MOB-suite database.
+- **323 kb replicons (S2753ref / S2754ref)**: no replicon type, no relaxase, no orit, Mash distance 1.0 — no recognized plasmid replication or mobilization machinery. Combined with unit copy number and carriage of essential genes (SecY), this reinforces a chromid-like classification rather than a typical plasmid.
+
 ## Files
 
 | File | Description |
@@ -217,7 +238,7 @@ Key observations:
 | `samples.txt` | Workflow input: sample names, read paths, group assignments |
 | `config.json` | Workflow config (references_mode, QC on, HMMs on, heavy annotations off) |
 | `run_anvio_workflow.sh` | LSF script: anvi'o metagenomics workflow (12 cores, 8 GB/core, 24 h) |
-| `run_genomad.sh` | LSF script: geNomad end-to-end on all 3 samples (12 cores, 8 GB/core, 4 h) |
+| `run_genomad.sh` | LSF script: geNomad end-to-end on all 7 samples (12 cores, 8 GB/core, 4 h) |
 | `workflow.pdf` | DAG of the Snakemake workflow |
 
 ## Scripts
@@ -228,6 +249,8 @@ Key observations:
 | `scripts/01a_annotate_contigs.py` | Annotate contigs: split-smoothed coverage, HMM hit counts, assembler metadata |
 | `scripts/01b_integrate_genomad.py` | Add geNomad plasmid/virus classification to annotations (optional) |
 | `scripts/02_compute_copy_numbers.py` | Compute copy numbers from annotated contigs, classify chromosome/plasmid |
+| `scripts/extract_ref_plasmids.sh` | Extract plasmid sequences from reference FASTAs by header keyword into `input_plasmidsRef/` |
+| `scripts/run_mob_typer.sh` | LSF script: run mob_typer per plasmid sequence on all reference genomes (4 cores, 4 GB, 1 h) |
 
 ## Output directories
 
@@ -251,6 +274,8 @@ Key observations:
 | `results/contig_annotations.tsv` | Per-contig features: coverage stats, HMM counts, assembler metadata (+geNomad if 01b run) |
 | `results/copy_numbers.tsv` | Final copy numbers with classification |
 | `results/copy_numbers_summary.txt` | Human-readable summary |
+| `results/mob_typer/` | mob_typer typing results per reference sample (one TSV per sample, one row per plasmid) |
+| `input_plasmidsRef/` | Plasmid sequences extracted from reference FASTAs, one FASTA per sample |
 
 ## Roadmap: multi-condition copy number comparison
 
